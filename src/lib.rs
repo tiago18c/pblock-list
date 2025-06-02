@@ -1,6 +1,6 @@
 #![no_std]
  
-use pinocchio::{account_info::AccountInfo, entrypoint, no_allocator, nostd_panic_handler, program_entrypoint, program_error::ProgramError, pubkey::Pubkey, ProgramResult};
+use pinocchio::{account_info::AccountInfo, no_allocator, nostd_panic_handler, program_entrypoint, program_error::ProgramError, pubkey::Pubkey, ProgramResult};
 use pinocchio_pubkey::declare_id;
  
 program_entrypoint!(process_instruction);
@@ -25,37 +25,23 @@ pub use state::*;
 // ];
 declare_id!("22222222222222222222222222222222222222222222");
 
-pub const U64_BYTES: usize = 8;
-
-//pub const TX_HOOK_DISCRIMINATOR: [u8; 8] = [0x69, 0x25, 0x65, 0xC5, 0x4B, 0xFB, 0x00, 0x00];
-//pub const TX_HOOK_DISC: u64 = 0x692565C54BFB0000;
-
-//pub const INIT_DISCRIMINATOR: [u8; 8] = [0x01, 0x25, 0x65, 0xC5, 0x4B, 0xFB, 0x00, 0x00];
-//pub const INIT_DISC: u64 = 0x012565C54BFB0000;
-//pub const _DISCRIMINATOR: [u8; 8] = [0x69, 0x25, 0x65, 0xC5, 0x4B, 0xFB, 0x00, 0x00];
  
 #[inline(always)]
 fn process_instruction(
     _program_id: &Pubkey,
-    _accounts: &[AccountInfo],
+    accounts: &[AccountInfo],
     instruction_data: &[u8],
 ) -> ProgramResult {
-    let [disc, remaining_data @ ..] = instruction_data else {
+    let [disc, _remaining_data @ ..] = instruction_data else {
         return Err(BlockListError::InvalidInstruction.into());
     };
     
     
     match *disc {
-        105u8 => {
-            // TODO: implement tx 
-            return Err(ProgramError::Custom(3));
-        }
-        150u8 => {
-            // TODO: implement init
-            return Err(ProgramError::Custom(6));
-        }
-        _ => return Err(ProgramError::Custom(15)),
+        TxHook::DISCRIMINATOR => TxHook::try_from(accounts)?.process(),
+        Init::DISCRIMINATOR => Init::try_from(accounts)?.process(),
+        BlockWallet::DISCRIMINATOR => BlockWallet::try_from(accounts)?.process(),
+        UnblockWallet::DISCRIMINATOR => UnblockWallet::try_from(accounts)?.process(),
+        _ => Err(ProgramError::InvalidInstructionData),
     }
-
-    Ok(())
 }

@@ -1,4 +1,4 @@
-use pinocchio::{account_info::AccountInfo, instruction::Signer, pubkey::{find_program_address, try_find_program_address, Pubkey}, seeds, signer, sysvars::{rent::Rent, Sysvar}, ProgramResult};
+use pinocchio::{account_info::AccountInfo, instruction::Signer, pubkey::find_program_address, seeds, sysvars::{rent::Rent, Sysvar}, ProgramResult};
 
 use crate::{load_mut_unchecked, BlockListError, Config, Discriminator, Transmutable};
 
@@ -34,7 +34,7 @@ impl<'a> TryFrom<&'a [AccountInfo]> for Init<'a> {
 
 
         // derive config account
-        let (config_account, config_bump) = find_program_address(&[Config::SEED_PREFIX], &crate::ID);
+        let (_, config_bump) = find_program_address(&[Config::SEED_PREFIX], &crate::ID);
         // no need to check if address is valid
         // cpi call with config as signer, runtime will check if the right account has been signer escalated
 
@@ -62,20 +62,20 @@ impl<'a> Init<'a> {
         let min = Rent::get()?.minimum_balance(Config::LEN);
         let lamports = if min >= self.config.lamports() {
                 0
-            } else { 
-                min - self.config.lamports()
-            };
+        } else { 
+            min - self.config.lamports()
+        };
 
-            let bump_seed = [self.config_bump];
-            let seeds = seeds!(Config::SEED_PREFIX, &bump_seed);
-            let signer = Signer::from(&seeds);
+        let bump_seed = [self.config_bump];
+        let seeds = seeds!(Config::SEED_PREFIX, &bump_seed);
+        let signer = Signer::from(&seeds);
             
         pinocchio_system::instructions::CreateAccount {
             from: self.authority,
             to: self.config,
             lamports,
             space: Config::LEN as u64,
-            owner: &pinocchio_system::ID,
+            owner: &crate::ID,
         }.invoke_signed(&[signer])?;
 
         let mut data = self.config.try_borrow_mut_data()?;
