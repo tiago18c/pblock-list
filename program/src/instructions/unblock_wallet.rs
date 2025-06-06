@@ -1,6 +1,6 @@
 use pinocchio::{account_info::AccountInfo, program_error::ProgramError, ProgramResult};
 
-use crate::{load, BlockListError, Config, Discriminator};
+use crate::{load, load_mut_unchecked, BlockListError, Config, Discriminator, WalletBlock};
 
 
 pub struct UnblockWallet<'a> {
@@ -21,6 +21,9 @@ impl<'a> UnblockWallet<'a> {
                 .ok_or(ProgramError::ArithmeticOverflow)?;
             self.wallet_block.close_unchecked();
         }
+        
+        let config = unsafe { load_mut_unchecked::<Config>(self.config.borrow_mut_data_unchecked())? };
+        config.blocked_wallets_count = config.blocked_wallets_count.checked_sub(1).ok_or(ProgramError::ArithmeticOverflow)?;
 
         Ok(())
     }
@@ -46,6 +49,14 @@ impl<'a> TryFrom<&'a [AccountInfo]> for UnblockWallet<'a> {
 
         if !authority.is_signer() || cfg.authority.ne(authority.key()) {
             return Err(BlockListError::InvalidAuthority);
+        }
+        
+        if !config.is_writable() && !wallet_block.is_writable() {
+            return Err(BlockListError::AccountNotWritable);
+        }
+
+        if unsafe { load::<WalletBlock>(wallet_block.borrow_data_unchecked()).is_err() }{
+            return Err(BlockListError::InvalidAccountData);
         }
 
         Ok(Self {

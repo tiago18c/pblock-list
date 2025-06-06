@@ -7,6 +7,7 @@ use super::{Discriminator, Transmutable};
 pub struct Config {
     pub discriminator: u8,
     pub authority: Pubkey,
+    pub blocked_wallets_count: u64,
 }
 
 impl Config {
@@ -15,7 +16,7 @@ impl Config {
 }
 
 impl Transmutable for Config {
-    const LEN: usize = 8 + 32;
+    const LEN: usize = 1 + 32 + 8;
 }
 
 impl Discriminator for Config {

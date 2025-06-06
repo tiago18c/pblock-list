@@ -9,7 +9,6 @@ pub trait Transmutable {
     const LEN: usize;
 }
 
-
 pub trait Discriminator {
     const DISCRIMINATOR: u8;
 }

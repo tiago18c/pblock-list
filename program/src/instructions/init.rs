@@ -59,12 +59,7 @@ impl<'a> TryFrom<&'a [AccountInfo]> for Init<'a> {
 
 impl<'a> Init<'a> {
     pub fn process(&self) -> ProgramResult {
-        let min = Rent::get()?.minimum_balance(Config::LEN);
-        let lamports = if min >= self.config.lamports() {
-                0
-        } else { 
-            min - self.config.lamports()
-        };
+        let lamports = Rent::get()?.minimum_balance(Config::LEN);
 
         let bump_seed = [self.config_bump];
         let seeds = seeds!(Config::SEED_PREFIX, &bump_seed);

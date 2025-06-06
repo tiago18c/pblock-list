@@ -14,7 +14,7 @@ impl WalletBlock {
 }
 
 impl Transmutable for WalletBlock {
-    const LEN: usize = 8 + 32;
+    const LEN: usize = 1 + 32;
 }
 
 impl Discriminator for WalletBlock {

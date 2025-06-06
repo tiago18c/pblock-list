@@ -1,4 +1,4 @@
-use pinocchio::{account_info::AccountInfo, instruction::Signer, pubkey::find_program_address, seeds, sysvars::{rent::Rent, Sysvar}, ProgramResult};
+use pinocchio::{account_info::AccountInfo, instruction::Signer, program_error::ProgramError, pubkey::find_program_address, seeds, sysvars::{rent::Rent, Sysvar}, ProgramResult};
 
 use crate::{load, load_mut_unchecked, BlockListError, Config, Discriminator, Transmutable, WalletBlock};
 
@@ -14,15 +14,10 @@ pub struct BlockWallet<'a> {
 
 impl<'a> BlockWallet<'a> {
     pub fn process(&self) -> ProgramResult {
-        let min = Rent::get()?.minimum_balance(WalletBlock::LEN);
-        let lamports = if min >= self.config.lamports() {
-                0
-        } else { 
-            min - self.config.lamports()
-        };
+        let lamports = Rent::get()?.minimum_balance(WalletBlock::LEN);
 
         let bump_seed = [self.wallet_block_bump];
-        let seeds = seeds!(WalletBlock::SEED_PREFIX, &bump_seed);
+        let seeds = seeds!(WalletBlock::SEED_PREFIX, self.wallet.key(), &bump_seed);
         let signer = Signer::from(&seeds);
             
         pinocchio_system::instructions::CreateAccount {
@@ -39,6 +34,9 @@ impl<'a> BlockWallet<'a> {
         };
         wallet_block.discriminator = WalletBlock::DISCRIMINATOR;
         wallet_block.address = *self.wallet.key();
+
+        let config = unsafe { load_mut_unchecked::<Config>(self.config.borrow_mut_data_unchecked())? };
+        config.blocked_wallets_count = config.blocked_wallets_count.checked_add(1).ok_or(ProgramError::ArithmeticOverflow)?;
         
         Ok(())
     }
@@ -66,7 +64,11 @@ impl<'a> TryFrom<&'a [AccountInfo]> for BlockWallet<'a> {
             return Err(BlockListError::InvalidAuthority);
         }
 
-        let (_, wallet_block_bump) = find_program_address(&[WalletBlock::SEED_PREFIX], &crate::ID);
+        if !config.is_writable() && !wallet_block.is_writable() {
+            return Err(BlockListError::AccountNotWritable);
+        }
+
+        let (_, wallet_block_bump) = find_program_address(&[WalletBlock::SEED_PREFIX, wallet.key()], &crate::ID);
 
         // check if system program is valid
         if system_program.key().ne(&pinocchio_system::ID) {

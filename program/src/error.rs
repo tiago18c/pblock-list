@@ -11,6 +11,10 @@ pub enum BlockListError {
     UninitializedAccount,
     InvalidSystemProgram,
     InvalidConfigAccount,
+    AccountNotWritable,
+    InvalidMint,
+    InvalidExtraMetasAccount,
+    ImmutableOwnerExtensionMissing,
 }
 
 

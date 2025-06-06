@@ -1,13 +1,7 @@
-[package]
-name = "block-list"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = ["program", "cli", "sdk/rust"]
+resolver = "2"
 
-[lib]
-crate-type = ["lib", "cdylib"]
 
-[dependencies]
-bytemuck = "1.23.0"
-pinocchio = "0.8.4"
-pinocchio-pubkey = "0.2.4"
-pinocchio-system = "0.2.3"
+[workspace.dependencies]
+block-list-client = { path = "sdk/rust"}
