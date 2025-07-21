@@ -32,10 +32,10 @@ impl<'a> TxHook<'a> {
     pub fn process(&self) -> ProgramResult {
         // check if there is a wallet block for the source account
         if let Some(source_wallet_block) = self.source_wallet_block {
-            
+            let source_data = unsafe {self.source.borrow_data_unchecked()};
             // without the immutable owner extension, TA owners could bypass wallet blocks
             // by changing the owner to a different wallet controlled by the same entity
-            if !has_immutable_owner_extension(unsafe {self.source.borrow_data_unchecked()}) {
+            if !has_immutable_owner_extension(source_data) {
                 let mut logger = Logger::<64>::default();
                 logger.append("Transfer Blocked: Source TA - ImmutableOwnerExtensionMissing");
                 logger.log();
@@ -51,8 +51,8 @@ impl<'a> TxHook<'a> {
                 // this implies its the permanent delegate
                 // alternatively we can decode the mint and get the permanent delegate
 
-                let owner = unsafe { &*(self.source.borrow_data_unchecked()[32..64].as_ptr() as *const Pubkey) };
-                let delegate = unsafe { &*(self.source.borrow_data_unchecked()[76..108].as_ptr() as *const Pubkey) };
+                let owner = unsafe { &*(source_data[32..64].as_ptr() as *const Pubkey) };
+                let delegate = unsafe { &*(source_data[76..108].as_ptr() as *const Pubkey) };
 
                 if owner.eq(self.authority.key()) || delegate.eq(self.authority.key()) {
                     let mut logger = Logger::<64>::default();
@@ -67,6 +67,13 @@ impl<'a> TxHook<'a> {
 
         // check if there is a wallet block for the destination account
         if let Some(destination_wallet_block) = self.destination_wallet_block {
+
+            if !has_immutable_owner_extension(unsafe {self.destination.borrow_data_unchecked()}) {
+                let mut logger = Logger::<64>::default();
+                logger.append("Transfer Blocked: Destination TA - ImmutableOwnerExtensionMissing");
+                logger.log();
+                return Err(BlockListError::ImmutableOwnerExtensionMissing.into());
+            }
 
             if !destination_wallet_block.data_is_empty() {
 
