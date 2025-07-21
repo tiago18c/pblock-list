@@ -10,7 +10,6 @@ pub struct WalletBlock {
 
 impl WalletBlock {
     pub const SEED_PREFIX: &'static [u8] = b"wallet_block";
-    pub const DISCRIMINATOR: u8 = 0x01;
 }
 
 impl Transmutable for WalletBlock {
@@ -18,5 +17,5 @@ impl Transmutable for WalletBlock {
 }
 
 impl Discriminator for WalletBlock {
-    const DISCRIMINATOR: u8 = 0x01;
+    const DISCRIMINATOR: u8 = 0x02;
 }

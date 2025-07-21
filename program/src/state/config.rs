@@ -12,7 +12,6 @@ pub struct Config {
 
 impl Config {
     pub const SEED_PREFIX: &'static [u8] = b"config";
-    pub const DISCRIMINATOR: u8 = 0x00;
 }
 
 impl Transmutable for Config {
@@ -20,6 +19,6 @@ impl Transmutable for Config {
 }
 
 impl Discriminator for Config {
-    const DISCRIMINATOR: u8 = 0x00;
+    const DISCRIMINATOR: u8 = 0x01;
 }
 
